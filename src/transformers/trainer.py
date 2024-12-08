@@ -4406,7 +4406,7 @@ class Trainer:
             inputs (`Dict[str, Union[torch.Tensor, Any]]`):
                 The inputs and targets of the model.
 
-                The dictionary will be unpacked before being fed to the model. Most models expect the targets under the
+                The dictionary will be unpacked before beinfg fed to the model. Most models expect the targets under the
                 argument `labels`. Check your model's documentation for all accepted arguments.
             prediction_loss_only (`bool`):
                 Whether or not to return the loss only.
@@ -4418,6 +4418,8 @@ class Trainer:
             Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]: A tuple with the loss,
             logits and labels (each being optional).
         """
+        # TODO: Remove the prediction_loss_only argument above as we're always returning the logits and labels
+
         has_labels = False if len(self.label_names) == 0 else all(inputs.get(k) is not None for k in self.label_names)
         # For CLIP-like models capable of returning loss values.
         # If `return_loss` is not specified or being `None` in `inputs`, we check if the default value of `return_loss`
@@ -4484,9 +4486,6 @@ class Trainer:
                     # TODO: this needs to be fixed and made cleaner later.
                     if self.args.past_index >= 0:
                         self._past = outputs[self.args.past_index - 1]
-
-        if prediction_loss_only:
-            return (loss, None, None)
 
         logits = nested_detach(logits)
         if len(logits) == 1:
