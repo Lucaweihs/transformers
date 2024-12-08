@@ -4249,7 +4249,7 @@ class Trainer:
                     batch_size = observed_batch_size
 
             # Prediction step
-            losses, logits, labels = self.prediction_step(model, inputs, prediction_loss_only, ignore_keys=ignore_keys)
+            losses, logits, labels = selfb(model, inputs, prediction_loss_only, ignore_keys=ignore_keys)
             main_input_name = getattr(self.model, "main_input_name", "input_ids")
             inputs_decode = (
                 self._prepare_input(inputs[main_input_name]) if "inputs" in args.include_for_metrics else None
@@ -4406,7 +4406,7 @@ class Trainer:
             inputs (`Dict[str, Union[torch.Tensor, Any]]`):
                 The inputs and targets of the model.
 
-                The dictionary will be unpacked before beinfg fed to the model. Most models expect the targets under the
+                The dictionary will be unpacked before being fed to the model. Most models expect the targets under the
                 argument `labels`. Check your model's documentation for all accepted arguments.
             prediction_loss_only (`bool`):
                 Whether or not to return the loss only.
@@ -4496,7 +4496,7 @@ class Trainer:
             # Sometimes labels may have been modified by the model (e.g. padding).
             # Here we grab those to properly compute the loss.
             output_labels_list = nested_detach(tuple(outputs.get(name) for name in self.label_names))
-            if len(input_labels) == 1:
+            if len(output_labels_list) == 1:
                 labels = output_labels_list[0]
             elif len(output_labels_list) > 1:
                 raise NotImplementedError(f"Too many label tensors. {outputs.keys()=}, {self.label_names=}")
