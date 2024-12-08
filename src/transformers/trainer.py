@@ -3700,12 +3700,20 @@ class Trainer:
             labels = inputs.pop("labels")
         else:
             labels = None
+
         if self.model_accepts_loss_kwargs:
             loss_kwargs = {}
             if num_items_in_batch is not None:
                 loss_kwargs["num_items_in_batch"] = num_items_in_batch
             inputs = {**inputs, **loss_kwargs}
+
         outputs = model(**inputs)
+
+        if labels is not None and "labels" in outputs:
+            # Sometimes labels may have been modified by the model (e.g. padding).
+            # Here we grab those to properly compute the loss.
+            labels = outputs["labels"]
+
         # Save past state if it exists
         # TODO: this needs to be fixed and made cleaner later.
         if self.args.past_index >= 0:
@@ -4427,12 +4435,13 @@ class Trainer:
                 ignore_keys = []
 
         # labels may be popped when computing the loss (label smoothing for instance) so we grab them first.
+        input_labels = None
         if has_labels or loss_without_labels:
-            labels = nested_detach(tuple(inputs.get(name) for name in self.label_names))
-            if len(labels) == 1:
-                labels = labels[0]
-        else:
-            labels = None
+            input_labels_list = nested_detach(tuple(inputs.get(name) for name in self.label_names))
+            if len(input_labels_list) == 1:
+                input_labels = input_labels_list[0]
+            elif len(input_labels_list) > 1:
+                raise NotImplementedError(f"Too many label tensors. {inputs.keys()=}, {self.label_names=}")
 
         with torch.no_grad():
             if is_sagemaker_mp_enabled():
@@ -4482,6 +4491,18 @@ class Trainer:
         logits = nested_detach(logits)
         if len(logits) == 1:
             logits = logits[0]
+
+        labels = None
+        if input_labels is not None:
+            # Sometimes labels may have been modified by the model (e.g. padding).
+            # Here we grab those to properly compute the loss.
+            output_labels_list = nested_detach(tuple(outputs.get(name) for name in self.label_names))
+            if len(input_labels) == 1:
+                labels = output_labels_list[0]
+            elif len(output_labels_list) > 1:
+                raise NotImplementedError(f"Too many label tensors. {outputs.keys()=}, {self.label_names=}")
+            else:
+                labels = input_labels
 
         return (loss, logits, labels)
 
